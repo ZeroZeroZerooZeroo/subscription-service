@@ -4,6 +4,8 @@ import (
 	"log"
 
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/config"
+	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/repository"
+	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/service"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/pkg/database"
 )
 
@@ -22,5 +24,8 @@ func main() {
 		log.Println("Closing database connection")
 		db.Close()
 	}()
+
+	repo := repository.NewSubscriptionRepository(db.DB)
+	svc := service.NewSubscriptionService(repo)
 
 }

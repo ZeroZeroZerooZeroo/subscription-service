@@ -14,14 +14,14 @@ type Subscription struct {
 type CreateSubscriptionRequest struct {
 	ServiceName string `json:"service_name"`
 	Price       int    `json:"price"`
-	UserId      string `json:"user_id"`
+	UserID      string `json:"user_id"`
 	StartDate   string `json:"start_date"`
 }
 
 type UpdateSubscriptionRequest struct {
 	ServiceName string `json:"service_name"`
 	Price       int    `json:"price"`
-	UserId      string `json:"user_id"`
+	UserID      string `json:"user_id"`
 	StartDate   string `json:"start_date"`
 }
 
@@ -29,7 +29,7 @@ type SubscriptionResponse struct {
 	ID          string `json:"id"`
 	ServiceName string `json:"service_name"`
 	Price       int    `json:"price"`
-	UserId      string `json:"user_id"`
+	UserID      string `json:"user_id"`
 	StartDate   string `json:"start_date"`
 	EndDate     string `json:"end_date"`
 }
@@ -37,7 +37,7 @@ type SubscriptionResponse struct {
 type ListSubscriptionResponse struct {
 	Subscription []SubscriptionResponse `json:"subscriptions"`
 	Total        int                    `json:"total"`
-	//Limit        int                    `form:"limit,default=50"` 
+	//Limit        int                    `form:"limit,default=50"`
 	//Offset       int                    `form:"offset,default=0"`
 }
 
