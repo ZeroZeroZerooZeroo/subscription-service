@@ -157,7 +157,7 @@ func (r *subscriptionRepo) List(limit, offset int) ([]*model.Subscription, error
 }
 func (r *subscriptionRepo) CalculateTotalCost(req *model.CalculateCostRequest) (int, error) {
 	query := `SELECT COALESCE(SUM(price), 0) FROM subscriptions 
-	WHERE start_date <= $1 AND (end_date IS NULL OR end_date >= $2)
+    WHERE start_date <= $1 AND (end_date IS NULL OR end_date >= $2)
     AND user_id = $3 AND service_name = $4`
 
 	startPeriod, err := time.Parse("01-2006", req.StartPeriod)
