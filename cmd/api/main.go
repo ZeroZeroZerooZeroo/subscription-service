@@ -4,15 +4,18 @@ import (
 	"log"
 	"net/http"
 
-	//_ "github.com/ZeroZeroZerooZeroo/subscription-service/cmd/api/docs"
+	_ "github.com/ZeroZeroZerooZeroo/subscription-service/docs"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/config"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/handler"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/repository"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/service"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/pkg/database"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title Subscription Service API
+// @version 1.0
+// @description Сервис управления подписками с расчетом стоимости
+// @host localhost:8080
 func main() {
 
 	log.Println("Starting subscription service")
@@ -40,7 +43,6 @@ func main() {
 	mux := http.NewServeMux()
 	handler.SetupRoutes(mux)
 
-	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 	server := &http.Server{
 		Addr:    ":" + cfg.Server.Port,
 		Handler: mux,

@@ -52,7 +52,6 @@ func (r *subscriptionRepo) GetByID(id string) (*model.Subscription, error) {
 
 	var sub model.Subscription
 
-	// Конвертируем string ID в int для запроса
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid id format: must be integer")
@@ -73,12 +72,19 @@ func (r *subscriptionRepo) GetByID(id string) (*model.Subscription, error) {
 }
 
 func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionRequest) error {
-	query := `UPDATE subscriptions SET 
-	service_name = COALESCE($1, service_name),price = COALESCE($2, price),
-	user_id = COALESCE($3, user_id),start_date = COALESCE($4, start_date),
-	end_date = $5 WHERE id = $6`
+	currentSub, err := r.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get current subscription: %w", err)
+	}
 
-	var startDate interface{}
+	log.Printf("Current subscription: ID=%d, EndDate=%v", currentSub.ID, currentSub.EndDate)
+
+	query := `UPDATE subscriptions 
+	SET service_name = COALESCE($1, service_name),price = COALESCE($2, price),
+    user_id = COALESCE($3, user_id),start_date = COALESCE($4, start_date),
+    end_date = COALESCE($5, end_date) WHERE id = $6`
+
+	var startDate, endDate interface{}
 
 	if req.StartDate != nil && *req.StartDate != "" {
 		parsedDate, err := time.Parse("01-2006", *req.StartDate)
@@ -86,22 +92,27 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 			return fmt.Errorf("invalid start_date format: %w", err)
 		}
 		startDate = parsedDate
+		endDate = parsedDate.AddDate(0, 1, 0)
+		log.Printf("New dates - start: %v, end: %v", startDate, endDate)
 	} else {
 		startDate = nil
-	}
-
-	var endDate interface{}
-	if req.StartDate != nil && *req.StartDate != "" {
-		parsedDate, err := time.Parse("01-2006", *req.StartDate)
-		if err != nil {
-			return fmt.Errorf("invalid start_date format: %w", err)
-		}
-		endDate = parsedDate.AddDate(0, 1, 0)
-	} else {
 		endDate = nil
 	}
 
-	var userID interface{}
+	var serviceName, price, userID interface{}
+
+	if req.ServiceName != nil {
+		serviceName = *req.ServiceName
+	} else {
+		serviceName = nil
+	}
+
+	if req.Price != nil {
+		price = *req.Price
+	} else {
+		price = nil
+	}
+
 	if req.UserID != nil && *req.UserID != "" {
 		if _, err := uuid.Parse(*req.UserID); err != nil {
 			return fmt.Errorf("invalid user_id format")
@@ -111,31 +122,18 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 		userID = nil
 	}
 
-	var serviceName interface{}
-	if req.ServiceName != nil {
-		serviceName = *req.ServiceName
-	} else {
-		serviceName = nil
-	}
-
-	var price interface{}
-	if req.Price != nil {
-		price = *req.Price
-	} else {
-		price = nil
-	}
-
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return fmt.Errorf("invalid id format: must be integer")
 	}
 
-	result, err := r.db.Exec(query, serviceName, price, userID, startDate, endDate, idInt)
+	log.Printf("Executing update: service=%v, price=%v, user=%v, start=%v, end=%v",
+		serviceName, price, userID, startDate, endDate)
 
+	result, err := r.db.Exec(query, serviceName, price, userID, startDate, endDate, idInt)
 	if err != nil {
 		log.Printf("Error updating subscription: %v", err)
 		return fmt.Errorf("failed to update subscription: %w", err)
-
 	}
 
 	rowsAffected, _ := result.RowsAffected()
@@ -143,7 +141,7 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 		return fmt.Errorf("subscription not found")
 	}
 
-	log.Printf("Subscription updated: %s", id)
+	log.Printf("Subscription updated successfully: %s", id)
 	return nil
 }
 

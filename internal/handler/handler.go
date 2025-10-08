@@ -8,7 +8,7 @@ import (
 
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/model"
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/service"
-	// httpSwagger "github.com/swaggo/http-swagger"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type SubscriptionHandler struct {
@@ -19,6 +19,17 @@ func NewSubscriptionHandler(service service.SubscriptionService) *SubscriptionHa
 	return &SubscriptionHandler{service: service}
 }
 
+// CreateSubscription godoc
+// @Summary Создать новую подписку
+// @Description Создает новую подписку для пользователя с автоматическим расчетом даты окончания (+1 месяц)
+// @Tags подписки
+// @Accept json
+// @Produce json
+// @Param request body model.CreateSubscriptionRequest true "Данные для создания подписки"
+// @Success 201 {object} model.Subscription "Созданная подписка"
+// @Failure 400 {string} string "Неверное тело запроса"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /subscriptions [post]
 func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling CreateSubscription request")
 
@@ -43,6 +54,16 @@ func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.
 	}
 }
 
+// GetSubscription godoc
+// @Summary Получить подписку по ID
+// @Description Возвращает детальную информацию о подписке по ее идентификатору
+// @Tags подписки
+// @Produce json
+// @Param id query string true "ID подписки"
+// @Success 200 {object} model.Subscription "Найденная подписка"
+// @Failure 400 {string} string "ID обязателен"
+// @Failure 404 {string} string "Подписка не найдена"
+// @Router /subscriptions [get]
 func (h *SubscriptionHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	log.Printf("Handling GetSubscription request for ID: %s", id)
@@ -65,6 +86,18 @@ func (h *SubscriptionHandler) GetSubscription(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// UpdateSubscription godoc
+// @Summary Обновить подписку
+// @Description Обновляет данные существующей подписки. Все поля опциональны.
+// @Tags подписки
+// @Accept json
+// @Produce json
+// @Param id query string true "ID подписки"
+// @Param request body model.UpdateSubscriptionRequest true "Данные для обновления подписки"
+// @Success 204 "Подписка успешно обновлена"
+// @Failure 400 {string} string "Неверное тело запроса"
+// @Failure 404 {string} string "Подписка не найдена"
+// @Router /subscriptions [put]
 func (h *SubscriptionHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	log.Printf("Handling UpdateSubscription request for ID: %s", id)
@@ -90,6 +123,16 @@ func (h *SubscriptionHandler) UpdateSubscription(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// DeleteSubscription godoc
+// @Summary Удалить подписку
+// @Description Удаляет подписку по идентификатору
+// @Tags подписки
+// @Produce json
+// @Param id query string true "ID подписки"
+// @Success 204 "Подписка успешно удалена"
+// @Failure 400 {string} string "ID обязателен"
+// @Failure 404 {string} string "Подписка не найдена"
+// @Router /subscriptions [delete]
 func (h *SubscriptionHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	log.Printf("Handling DeleteSubscription request for ID: %s", id)
@@ -108,6 +151,16 @@ func (h *SubscriptionHandler) DeleteSubscription(w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// ListSubscriptions godoc
+// @Summary Список подписок
+// @Description Возвращает пагинированный список всех подписок
+// @Tags подписки
+// @Produce json
+// @Param limit query int false "Лимит (по умолчанию: 10, максимум: 100)" default(10)
+// @Param offset query int false "Смещение (по умолчанию: 0)" default(0)
+// @Success 200 {array} model.Subscription "Список подписок"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /subscriptions/list [get]
 func (h *SubscriptionHandler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling ListSubscriptions request")
 
@@ -142,6 +195,17 @@ func (h *SubscriptionHandler) ListSubscriptions(w http.ResponseWriter, r *http.R
 	}
 }
 
+// CalculateTotalCost godoc
+// @Summary Расчет общей стоимости
+// @Description Рассчитывает общую стоимость подписок за указанный период с фильтрацией по пользователю и сервису
+// @Tags стоимость
+// @Accept json
+// @Produce json
+// @Param request body model.CalculateCostRequest true "Данные для расчета стоимости"
+// @Success 200 {object} model.CalculateCostResponse "Результат расчета стоимости"
+// @Failure 400 {string} string "Неверное тело запроса"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /subscriptions/total-cost [post]
 func (h *SubscriptionHandler) CalculateTotalCost(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling CalculateTotalCost request")
 
@@ -172,5 +236,5 @@ func (h *SubscriptionHandler) SetupRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /subscriptions", h.DeleteSubscription)
 	mux.HandleFunc("GET /subscriptions/list", h.ListSubscriptions)
 	mux.HandleFunc("POST /subscriptions/total-cost", h.CalculateTotalCost)
-	// mux.Handle("/swagger/", httpSwagger.WrapHandler)
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 }

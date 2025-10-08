@@ -1,0 +1,282 @@
+definitions:
+  github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.CalculateCostRequest:
+    description: Тело запроса для расчета общей стоимости подписок
+    properties:
+      end_period:
+        example: 12-2025
+        type: string
+      service_name:
+        example: Yandex Plus
+        type: string
+      start_period:
+        example: 01-2025
+        type: string
+      user_id:
+        example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        type: string
+    required:
+    - end_period
+    - service_name
+    - start_period
+    - user_id
+    type: object
+  github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.CalculateCostResponse:
+    description: Ответ с результатом расчета общей стоимости
+    properties:
+      end_period:
+        example: 12-2025
+        type: string
+      service_name:
+        example: Yandex Plus
+        type: string
+      start_period:
+        example: 01-2025
+        type: string
+      total_cost:
+        example: 18000
+        type: integer
+      user_id:
+        example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        type: string
+    type: object
+  github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.CreateSubscriptionRequest:
+    description: Тело запроса для создания новой подписки
+    properties:
+      price:
+        example: 1500
+        type: integer
+      service_name:
+        example: Yandex Plus
+        type: string
+      start_date:
+        example: 01-2025
+        type: string
+      user_id:
+        example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        type: string
+    required:
+    - price
+    - service_name
+    - start_date
+    - user_id
+    type: object
+  github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.Subscription:
+    description: Информация о подписке
+    properties:
+      end_date:
+        example: 02-2025
+        type: string
+      id:
+        example: 1
+        type: integer
+      price:
+        example: 1500
+        type: integer
+      service_name:
+        example: Yandex Plus
+        type: string
+      start_date:
+        example: 01-2025
+        type: string
+      user_id:
+        example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        type: string
+    type: object
+  github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.UpdateSubscriptionRequest:
+    description: Тело запроса для обновления существующей подписки
+    properties:
+      price:
+        example: 2000
+        type: integer
+      service_name:
+        example: Yandex Plus Premium
+        type: string
+      start_date:
+        example: 02-2025
+        type: string
+      user_id:
+        example: 60601fee-2bf1-4721-ae6f-7636e79a0cba
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Сервис управления подписками с расчетом стоимости
+  title: Subscription Service API
+  version: "1.0"
+paths:
+  /subscriptions:
+    delete:
+      description: Удаляет подписку по идентификатору
+      parameters:
+      - description: ID подписки
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Подписка успешно удалена
+        "400":
+          description: ID обязателен
+          schema:
+            type: string
+        "404":
+          description: Подписка не найдена
+          schema:
+            type: string
+      summary: Удалить подписку
+      tags:
+      - подписки
+    get:
+      description: Возвращает детальную информацию о подписке по ее идентификатору
+      parameters:
+      - description: ID подписки
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Найденная подписка
+          schema:
+            $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.Subscription'
+        "400":
+          description: ID обязателен
+          schema:
+            type: string
+        "404":
+          description: Подписка не найдена
+          schema:
+            type: string
+      summary: Получить подписку по ID
+      tags:
+      - подписки
+    post:
+      consumes:
+      - application/json
+      description: Создает новую подписку для пользователя с автоматическим расчетом
+        даты окончания (+1 месяц)
+      parameters:
+      - description: Данные для создания подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.CreateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Созданная подписка
+          schema:
+            $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.Subscription'
+        "400":
+          description: Неверное тело запроса
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Создать новую подписку
+      tags:
+      - подписки
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные существующей подписки. Все поля опциональны.
+      parameters:
+      - description: ID подписки
+        in: query
+        name: id
+        required: true
+        type: string
+      - description: Данные для обновления подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.UpdateSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Подписка успешно обновлена
+        "400":
+          description: Неверное тело запроса
+          schema:
+            type: string
+        "404":
+          description: Подписка не найдена
+          schema:
+            type: string
+      summary: Обновить подписку
+      tags:
+      - подписки
+  /subscriptions/list:
+    get:
+      description: Возвращает пагинированный список всех подписок
+      parameters:
+      - default: 10
+        description: 'Лимит (по умолчанию: 10, максимум: 100)'
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: 'Смещение (по умолчанию: 0)'
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список подписок
+          schema:
+            items:
+              $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.Subscription'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Список подписок
+      tags:
+      - подписки
+  /subscriptions/total-cost:
+    post:
+      consumes:
+      - application/json
+      description: Рассчитывает общую стоимость подписок за указанный период с фильтрацией
+        по пользователю и сервису
+      parameters:
+      - description: Данные для расчета стоимости
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.CalculateCostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Результат расчета стоимости
+          schema:
+            $ref: '#/definitions/github_com_ZeroZeroZerooZeroo_subscription-service_internal_model.CalculateCostResponse'
+        "400":
+          description: Неверное тело запроса
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      summary: Расчет общей стоимости
+      tags:
+      - стоимость
+swagger: "2.0"
