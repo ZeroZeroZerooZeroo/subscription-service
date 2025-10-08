@@ -28,8 +28,22 @@ func NewSubscriptionService(repo repository.SubscriptionRepository) Subscription
 }
 
 func (s *subscriptionService) CreateSubscription(req *model.CreateSubscriptionRequest) (*model.Subscription, error) {
-	if err := validateCreateRequest(req); err != nil {
-		return nil, err
+	if req.ServiceName == "" {
+		return nil, fmt.Errorf("service_name is required")
+	}
+	if req.Price <= 0 {
+		return nil, fmt.Errorf("price must be positive")
+	}
+	if req.UserID == "" {
+		return nil, fmt.Errorf("user_id is required")
+	}
+	if req.StartDate == "" {
+		return nil, fmt.Errorf("start_date is required")
+	}
+
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user_id format: must be valid UUID")
 	}
 
 	startDate, err := time.Parse("01-2006", req.StartDate)
@@ -37,22 +51,22 @@ func (s *subscriptionService) CreateSubscription(req *model.CreateSubscriptionRe
 		return nil, fmt.Errorf("invalid start_date format: %w", err)
 	}
 
-	endDate := time.Time{}
+	endDate := startDate.AddDate(0, 1, 0)
 
 	subscription := &model.Subscription{
-		ID:          uuid.New().String(),
 		ServiceName: req.ServiceName,
 		Price:       req.Price,
-		UserID:      req.UserID,
+		UserID:      userID,
 		StartDate:   startDate,
 		EndDate:     endDate,
 	}
 
-	if err := s.repo.Create(subscription); err != nil {
+	createdSubscription, err := s.repo.Create(subscription)
+	if err != nil {
 		return nil, err
 	}
 
-	log.Printf("Service: Created subscription %s for user %s", subscription.ID, subscription.UserID)
+	log.Printf("Service: Created subscription %s for user %s", createdSubscription.ID, createdSubscription.UserID)
 	return subscription, nil
 }
 
@@ -68,8 +82,15 @@ func (s *subscriptionService) UpdateSubscription(id string, req *model.UpdateSub
 		return fmt.Errorf("id is required")
 	}
 
-	if req.StartDate != "" {
-		if _, err := time.Parse("01-2006", req.StartDate); err != nil {
+	if req.UserID != nil && *req.UserID != "" {
+		_, err := uuid.Parse(*req.UserID)
+		if err != nil {
+			return fmt.Errorf("invalid user_id format: must be valid UUID")
+		}
+	}
+
+	if req.StartDate != nil && *req.StartDate != "" {
+		if _, err := time.Parse("01-2006", *req.StartDate); err != nil {
 			return fmt.Errorf("invalid start_date format: %w", err)
 		}
 	}
@@ -103,6 +124,17 @@ func (s *subscriptionService) CalculateTotalCost(req *model.CalculateCostRequest
 	if req.StartPeriod == "" || req.EndPeriod == "" {
 		return nil, fmt.Errorf("start_period and end_period are required")
 	}
+	if req.ServiceName == "" {
+		return nil, fmt.Errorf("service_name are required")
+	}
+	if req.UserID == "" {
+		return nil, fmt.Errorf("user_id are required")
+	}
+
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user_id format: must be valid UUID")
+	}
 
 	total, err := s.repo.CalculateTotalCost(req)
 	if err != nil {
@@ -111,25 +143,9 @@ func (s *subscriptionService) CalculateTotalCost(req *model.CalculateCostRequest
 
 	return &model.CalculateCostResponse{
 		TotalCost:   total,
-		UserID:      req.UserID,
+		UserID:      userID,
 		ServiceName: req.ServiceName,
 		StartPeriod: req.StartPeriod,
 		EndPeriod:   req.EndPeriod,
 	}, nil
-}
-
-func validateCreateRequest(req *model.CreateSubscriptionRequest) error {
-	if req.ServiceName == "" {
-		return fmt.Errorf("service_name is required")
-	}
-	if req.Price <= 0 {
-		return fmt.Errorf("price must be positive")
-	}
-	if req.UserID == "" {
-		return fmt.Errorf("user_id is required")
-	}
-	if req.StartDate == "" {
-		return fmt.Errorf("start_date is required")
-	}
-	return nil
 }

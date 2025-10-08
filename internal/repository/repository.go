@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/model"
+	"github.com/google/uuid"
 )
 
 type SubscriptionRepository interface {
-	Create(sub *model.Subscription) error
+	Create(sub *model.Subscription) (*model.Subscription, error)
 	GetByID(id string) (*model.Subscription, error)
 	Update(id string, req *model.UpdateSubscriptionRequest) error
 	Delete(id string) error
@@ -26,30 +27,31 @@ func NewSubscriptionRepository(db *sql.DB) SubscriptionRepository {
 	return &subscriptionRepo{db: db}
 }
 
-func (r *subscriptionRepo) Create(sub *model.Subscription) error {
+func (r *subscriptionRepo) Create(sub *model.Subscription) (*model.Subscription, error) {
 	query := `INSERT INTO subscriptions (id,service_name,price,user_id,start_date,end_date)
-	VALUES ($1,$2,$3,$4,$5,$6)`
+	VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`
 
-	_, err := r.db.Exec(query, sub.ID, sub.ServiceName, sub.Price, sub.UserID, sub.StartDate, sub.EndDate)
+	var createdID string
+	err := r.db.QueryRow(query, sub.ServiceName, sub.Price, sub.UserID, sub.StartDate, sub.EndDate).Scan(&createdID)
 
 	if err != nil {
 		log.Printf("Error creating subscription: %v", err)
-		return fmt.Errorf("failed to create subscription: %w", err)
+		return nil, fmt.Errorf("failed to create subscription: %w", err)
 	}
 
+	sub.ID = createdID
 	log.Printf("Subscription created successfully: %s", sub.ID)
-	return nil
+	return sub, nil
 }
 
 func (r *subscriptionRepo) GetByID(id string) (*model.Subscription, error) {
+
 	query := `SELECT id,service_name,price,user_id,start_date,end_date
 	FROM subscriptions WHERE id=$1`
 
 	var sub model.Subscription
-	var endDate sql.NullTime
 
-	err := r.db.QueryRow(query, id).Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &endDate)
-
+	err := r.db.QueryRow(query, id).Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("subscription not found")
 	}
@@ -57,10 +59,6 @@ func (r *subscriptionRepo) GetByID(id string) (*model.Subscription, error) {
 	if err != nil {
 		log.Printf("Error getting subscription by ID: %v", err)
 		return nil, fmt.Errorf("failed to get subscription: %w", err)
-	}
-
-	if endDate.Valid {
-		sub.EndDate = endDate.Time
 	}
 
 	log.Printf("Subscription retrieved: %s", id)
@@ -75,8 +73,8 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 
 	var startDate interface{}
 
-	if req.StartDate != "" {
-		parsedDate, err := time.Parse("01-2006", req.StartDate)
+	if req.StartDate != nil && *req.StartDate != "" {
+		parsedDate, err := time.Parse("01-2006", *req.StartDate)
 		if err != nil {
 			return fmt.Errorf("invalid start_date format: %w", err)
 		}
@@ -86,8 +84,41 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 	}
 
 	var endDate interface{}
+	if req.StartDate != nil && *req.StartDate != "" {
+		parsedDate, err := time.Parse("01-2006", *req.StartDate)
+		if err != nil {
+			return fmt.Errorf("invalid start_date format: %w", err)
+		}
+		endDate = parsedDate.AddDate(0, 1, 0)
+	} else {
+		endDate = nil
+	}
 
-	result, err := r.db.Exec(query, req.ServiceName, req.Price, req.UserID, startDate, endDate, id)
+	var userID interface{}
+	if req.UserID != nil && *req.UserID != "" {
+		if _, err := uuid.Parse(*req.UserID); err != nil {
+			return fmt.Errorf("invalid user_id format")
+		}
+		userID = *req.UserID
+	} else {
+		userID = nil
+	}
+
+	var serviceName interface{}
+	if req.ServiceName != nil {
+		serviceName = *req.ServiceName
+	} else {
+		serviceName = nil
+	}
+
+	var price interface{}
+	if req.Price != nil {
+		price = *req.Price
+	} else {
+		price = nil
+	}
+
+	result, err := r.db.Exec(query, serviceName, price, userID, startDate, endDate, id)
 
 	if err != nil {
 		log.Printf("Error updating subscription: %v", err)
@@ -103,6 +134,7 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 	log.Printf("Subscription updated: %s", id)
 	return nil
 }
+
 func (r *subscriptionRepo) Delete(id string) error {
 	query := `DELETE FROM subscriptions WHERE id=$1`
 
@@ -121,9 +153,10 @@ func (r *subscriptionRepo) Delete(id string) error {
 	log.Printf("Subscription deleted: %s", id)
 	return nil
 }
+
 func (r *subscriptionRepo) List(limit, offset int) ([]*model.Subscription, error) {
-	query := `SELECT id,service_name,price,user_id,start_date,end_date
-	FROM subscriptions ORDER BY start_date DESC LIMIT $1 OFFSET $2`
+	query := `SELECT id, service_name, price, user_id, start_date, end_date
+	FROM subscriptions LIMIT $1 OFFSET $2`
 
 	rows, err := r.db.Query(query, limit, offset)
 
@@ -138,15 +171,10 @@ func (r *subscriptionRepo) List(limit, offset int) ([]*model.Subscription, error
 
 	for rows.Next() {
 		var sub model.Subscription
-		var endDate sql.NullTime
 
-		err := rows.Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &endDate)
+		err := rows.Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan subscription: %w", err)
-		}
-
-		if endDate.Valid {
-			sub.EndDate = endDate.Time
 		}
 
 		subscriptions = append(subscriptions, &sub)
@@ -155,10 +183,16 @@ func (r *subscriptionRepo) List(limit, offset int) ([]*model.Subscription, error
 	log.Printf("Listed %d subscriptions", len(subscriptions))
 	return subscriptions, nil
 }
+
 func (r *subscriptionRepo) CalculateTotalCost(req *model.CalculateCostRequest) (int, error) {
 	query := `SELECT COALESCE(SUM(price), 0) FROM subscriptions 
     WHERE start_date <= $1 AND (end_date IS NULL OR end_date >= $2)
     AND user_id = $3 AND service_name = $4`
+
+	userID, err := uuid.Parse(req.UserID)
+	if err != nil {
+		return 0, fmt.Errorf("invalid user_id format: %w", err)
+	}
 
 	startPeriod, err := time.Parse("01-2006", req.StartPeriod)
 	if err != nil {
@@ -172,7 +206,7 @@ func (r *subscriptionRepo) CalculateTotalCost(req *model.CalculateCostRequest) (
 	}
 
 	var totalCost int
-	err = r.db.QueryRow(query, endPeriod, startPeriod, req.UserID, req.ServiceName).Scan(&totalCost)
+	err = r.db.QueryRow(query, endPeriod, startPeriod, userID, req.ServiceName).Scan(&totalCost)
 
 	if err != nil {
 		log.Printf("Error calculating total cost: %v", err)

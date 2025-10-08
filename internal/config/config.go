@@ -1,8 +1,10 @@
 package config
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type DatabaseConfig struct {
@@ -25,6 +27,9 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
+
+	loadEnvFile("../../.env")
+
 	return &Config{
 		Server: ServerConfig{
 			Host: getEnv("SERVER_HOST", "localhost"),
@@ -52,4 +57,30 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+func loadEnvFile(filename string) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "#") || len(line) == 0 {
+			continue
+		}
+
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+
+			if os.Getenv(key) == "" {
+				os.Setenv(key, value)
+			}
+		}
+	}
 }

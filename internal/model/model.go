@@ -1,12 +1,16 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Subscription struct {
 	ID          string    `json:"id"`
 	ServiceName string    `json:"service_name"`
 	Price       int       `json:"price"`
-	UserID      string    `json:"user_id"`
+	UserID      uuid.UUID `json:"user_id"`
 	StartDate   time.Time `json:"start_date"`
 	EndDate     time.Time `json:"end_date"`
 }
@@ -19,39 +23,23 @@ type CreateSubscriptionRequest struct {
 }
 
 type UpdateSubscriptionRequest struct {
-	ServiceName string `json:"service_name"`
-	Price       int    `json:"price"`
-	UserID      string `json:"user_id"`
-	StartDate   string `json:"start_date"`
-}
-
-type SubscriptionResponse struct {
-	ID          string `json:"id"`
-	ServiceName string `json:"service_name"`
-	Price       int    `json:"price"`
-	UserID      string `json:"user_id"`
-	StartDate   string `json:"start_date"`
-	EndDate     string `json:"end_date"`
-}
-
-type ListSubscriptionResponse struct {
-	Subscription []SubscriptionResponse `json:"subscriptions"`
-	Total        int                    `json:"total"`
-	//Limit        int                    `form:"limit,default=50"`
-	//Offset       int                    `form:"offset,default=0"`
+	ServiceName *string `json:"service_name"`
+	Price       *int    `json:"price"`
+	UserID      *string `json:"user_id"`
+	StartDate   *string `json:"start_date"`
 }
 
 type CalculateCostRequest struct {
-	UserID      string `json:"user_id,omitempty" validate:"omitempty,uuid4"`
-	ServiceName string `json:"service_name,omitempty"`
-	StartPeriod string `json:"start_period" validate:"required"`
-	EndPeriod   string `json:"end_period" validate:"required"`
+	UserID      string `json:"user_id"`
+	ServiceName string `json:"service_name"`
+	StartPeriod string `json:"start_period"`
+	EndPeriod   string `json:"end_period"`
 }
 
 type CalculateCostResponse struct {
-	TotalCost   int    `json:"total_cost"`
-	UserID      string `json:"user_id,omitempty"`
-	ServiceName string `json:"service_name,omitempty"`
-	StartPeriod string `json:"start_period"`
-	EndPeriod   string `json:"end_period"`
+	TotalCost   int       `json:"total_cost"`
+	UserID      uuid.UUID `json:"user_id"`
+	ServiceName string    `json:"service_name"`
+	StartPeriod string    `json:"start_period"`
+	EndPeriod   string    `json:"end_period"`
 }
