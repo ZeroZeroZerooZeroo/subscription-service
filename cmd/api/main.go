@@ -29,6 +29,10 @@ func main() {
 		db.Close()
 	}()
 
+	if err := database.RunMigrations(cfg.Database.GetMigrationConnectionString()); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+
 	repo := repository.NewSubscriptionRepository(db.DB)
 	svc := service.NewSubscriptionService(repo)
 	handler := handler.NewSubscriptionHandler(svc)

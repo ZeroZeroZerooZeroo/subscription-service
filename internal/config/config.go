@@ -84,3 +84,8 @@ func loadEnvFile(filename string) {
 		}
 	}
 }
+
+func (c *DatabaseConfig) GetMigrationConnectionString() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		c.User, c.Password, c.Host, c.Port, c.DBName, c.SSLMode)
+}

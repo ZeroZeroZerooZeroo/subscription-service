@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/ZeroZeroZerooZeroo/subscription-service/internal/model"
@@ -28,10 +29,10 @@ func NewSubscriptionRepository(db *sql.DB) SubscriptionRepository {
 }
 
 func (r *subscriptionRepo) Create(sub *model.Subscription) (*model.Subscription, error) {
-	query := `INSERT INTO subscriptions (id,service_name,price,user_id,start_date,end_date)
-	VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`
+	query := `INSERT INTO subscriptions (service_name, price, user_id, start_date, end_date)
+    VALUES ($1, $2, $3, $4, $5) RETURNING id`
 
-	var createdID string
+	var createdID int
 	err := r.db.QueryRow(query, sub.ServiceName, sub.Price, sub.UserID, sub.StartDate, sub.EndDate).Scan(&createdID)
 
 	if err != nil {
@@ -46,12 +47,18 @@ func (r *subscriptionRepo) Create(sub *model.Subscription) (*model.Subscription,
 
 func (r *subscriptionRepo) GetByID(id string) (*model.Subscription, error) {
 
-	query := `SELECT id,service_name,price,user_id,start_date,end_date
-	FROM subscriptions WHERE id=$1`
+	query := `SELECT id, service_name, price, user_id, start_date, end_date
+    FROM subscriptions WHERE id=$1`
 
 	var sub model.Subscription
 
-	err := r.db.QueryRow(query, id).Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
+	// Конвертируем string ID в int для запроса
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid id format: must be integer")
+	}
+
+	err = r.db.QueryRow(query, idInt).Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("subscription not found")
 	}
@@ -118,7 +125,12 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 		price = nil
 	}
 
-	result, err := r.db.Exec(query, serviceName, price, userID, startDate, endDate, id)
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("invalid id format: must be integer")
+	}
+
+	result, err := r.db.Exec(query, serviceName, price, userID, startDate, endDate, idInt)
 
 	if err != nil {
 		log.Printf("Error updating subscription: %v", err)
@@ -138,7 +150,12 @@ func (r *subscriptionRepo) Update(id string, req *model.UpdateSubscriptionReques
 func (r *subscriptionRepo) Delete(id string) error {
 	query := `DELETE FROM subscriptions WHERE id=$1`
 
-	result, err := r.db.Exec(query, id)
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		return fmt.Errorf("invalid id format: must be integer")
+	}
+
+	result, err := r.db.Exec(query, idInt)
 	if err != nil {
 		log.Printf("Error deleting subscription: %v", err)
 		return fmt.Errorf("failed to delete subscription: %w", err)
