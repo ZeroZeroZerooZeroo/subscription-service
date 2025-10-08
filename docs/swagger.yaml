@@ -3,7 +3,7 @@ definitions:
     description: Тело запроса для расчета общей стоимости подписок
     properties:
       end_period:
-        example: 02-2025
+        example: 12-2025
         type: string
       service_name:
         example: Yandex Plus
@@ -24,7 +24,7 @@ definitions:
     description: Ответ с результатом расчета общей стоимости
     properties:
       end_period:
-        example: 02-2025
+        example: 12-2025
         type: string
       service_name:
         example: Yandex Plus
