@@ -13,11 +13,6 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-// @title Subscription Service API444444444444
-// @version 1.0
-// @description API для управления подписками
-// @host localhost:8080
-// @BasePath /
 func main() {
 
 	log.Println("Starting subscription service")

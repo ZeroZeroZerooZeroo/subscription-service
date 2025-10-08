@@ -19,16 +19,6 @@ func NewSubscriptionHandler(service service.SubscriptionService) *SubscriptionHa
 	return &SubscriptionHandler{service: service}
 }
 
-// CreateSubscription godoc
-// @Summary Создать новую подписку
-// @Description Создает новую подписку для пользователя
-// @Tags subscriptions
-// @Accept json
-// @Produce json
-// @Param request body model.CreateSubscriptionRequest true "Данные для создания подписки"
-// @Success 201 {object} model.Subscription
-// @Failure 400 {object} map[string]string
-// @Router /subscriptions [post]
 func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Handling CreateSubscription request")
 
@@ -53,17 +43,6 @@ func (h *SubscriptionHandler) CreateSubscription(w http.ResponseWriter, r *http.
 	}
 }
 
-// GetUserByID godoc
-// @Summary Получить пользователя по ID
-// @Description Возвращает пользователя по его идентификатору
-// @Tags users
-// @Accept json
-// @Produce json
-// @Param id path int true "ID пользователя"
-// @Success 200 {object} User
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Router /users/{id} [get]
 func (h *SubscriptionHandler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	log.Printf("Handling GetSubscription request for ID: %s", id)
