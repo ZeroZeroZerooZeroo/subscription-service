@@ -289,7 +289,7 @@ const docTemplate = `{
             "properties": {
                 "end_period": {
                     "type": "string",
-                    "example": "12-2025"
+                    "example": "02-2025"
                 },
                 "service_name": {
                     "type": "string",
@@ -311,7 +311,7 @@ const docTemplate = `{
             "properties": {
                 "end_period": {
                     "type": "string",
-                    "example": "12-2025"
+                    "example": "02-2025"
                 },
                 "service_name": {
                     "type": "string",
